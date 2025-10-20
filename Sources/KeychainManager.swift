@@ -53,17 +53,24 @@ class KeychainManager {
 
         // If item already exists, update it instead
         if addStatus == errSecDuplicateItem {
-            let updateQuery: [String: Any] = [
+            var updateQuery: [String: Any] = [
                 kSecClass as String: kSecClassGenericPassword,
                 kSecAttrService as String: service,
-                kSecAttrAccount as String: key
+                kSecAttrAccount as String: key,
+                kSecAttrSynchronizable as String: kSecAttrSynchronizableAny
             ]
 
             let attributes: [String: Any] = [
                 kSecValueData as String: valueData
             ]
 
-            let updateStatus = SecItemUpdate(updateQuery as CFDictionary, attributes as CFDictionary)
+            var updateStatus = SecItemUpdate(updateQuery as CFDictionary, attributes as CFDictionary)
+
+            // If update failed with synchronizable query, try without it
+            if updateStatus == errSecMissingEntitlement || updateStatus == -34018 {
+                updateQuery.removeValue(forKey: kSecAttrSynchronizable as String)
+                updateStatus = SecItemUpdate(updateQuery as CFDictionary, attributes as CFDictionary)
+            }
 
             if updateStatus != errSecSuccess {
                 throw KeychainError.unexpectedStatus(updateStatus)
