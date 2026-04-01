@@ -20,7 +20,7 @@ build-signed:
 	@command -v xcodegen >/dev/null 2>&1 || (echo "Error: xcodegen is required for signed builds (brew install xcodegen)" && exit 1)
 	xcodegen generate
 	@echo "Building signed app bundle..."
-	xcodebuild -project $(XCODE_PROJECT) -scheme $(XCODE_SCHEME) -configuration Release -destination 'platform=macOS' -derivedDataPath $(XCODE_DERIVED_DATA) -allowProvisioningUpdates build
+	xcodebuild -project $(XCODE_PROJECT) -scheme $(XCODE_SCHEME) -configuration Release -destination 'platform=macOS' -derivedDataPath $(XCODE_DERIVED_DATA) -allowProvisioningUpdates -allowProvisioningDeviceRegistration build
 
 install: build-signed
 	@echo "Installing signed $(BINARY_NAME) app bundle to $(APP_INSTALL_DIR)..."

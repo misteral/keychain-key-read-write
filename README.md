@@ -25,6 +25,8 @@ This builds a signed macOS app bundle via Xcode (with automatic provisioning upd
 
 `make install` requires `xcodegen`, Xcode, and a configured Apple developer account in Xcode for code signing.
 
+On a new Mac, the first signed build may also need Xcode to register that Mac in your developer account so it can be added to the development provisioning profile.
+
 ## Usage
 
 ### Set a key from stdin
