@@ -3,12 +3,15 @@ settings:
   base:
     DEVELOPMENT_TEAM: 8HR3ZJZ5MZ
     CODE_SIGN_STYLE: Automatic
-    PRODUCT_BUNDLE_IDENTIFIER: co.itbeaver.LEIRadio
+    PRODUCT_BUNDLE_IDENTIFIER: co.itbeaver.kc
     CODE_SIGN_ENTITLEMENTS: kc.entitlements
     CURRENT_PROJECT_VERSION: 1
     MARKETING_VERSION: 1.1.0
     GENERATE_INFOPLIST_FILE: YES
     INFOPLIST_KEY_LSBackgroundOnly: YES
+  configs:
+    Release:
+      CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO
 targets:
   kc:
     type: application

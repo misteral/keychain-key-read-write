@@ -8,6 +8,7 @@ A lightweight Swift CLI tool for securely storing and retrieving API keys and se
 - Signed install with `keychain-access-groups` entitlement for synchronizable items
 - Automatic iCloud Keychain sync across your Apple devices
 - Simple command-line interface
+- Secret input via `--stdin` or secure `--prompt`
 - Local-only or sync-only write modes
 - Migration command for existing local-only keys
 
@@ -17,28 +18,33 @@ A lightweight Swift CLI tool for securely storing and retrieving API keys and se
 make install
 ```
 
-This builds a signed macOS app bundle via Xcode, installs it to:
+This builds a signed macOS app bundle via Xcode (with automatic provisioning updates), installs it to:
 
 - App bundle: `~/.local/share/kc/kc.app`
 - CLI wrapper: `~/.local/bin/kc`
 
-`make install` requires `xcodegen`.
+`make install` requires `xcodegen`, Xcode, and a configured Apple developer account in Xcode for code signing.
 
 ## Usage
 
-### Set a key (creates or updates)
+### Set a key from stdin
 ```bash
-kc set OPENAI_API_KEY sk-1234567890
+printf '%s' "$OPENAI_API_KEY" | kc set OPENAI_API_KEY --stdin
+```
+
+### Set a key with a secure prompt
+```bash
+kc set OPENAI_API_KEY --prompt
 ```
 
 ### Force a synchronizable write
 ```bash
-kc set OPENAI_API_KEY sk-1234567890 --sync-only
+kc set OPENAI_API_KEY --prompt --sync-only
 ```
 
 ### Force a local-only write
 ```bash
-kc set OPENAI_API_KEY sk-1234567890 --local-only
+printf '%s' "$OPENAI_API_KEY" | kc set OPENAI_API_KEY --stdin --local-only
 ```
 
 ### Get a key
@@ -56,6 +62,12 @@ kc get OPENAI_API_KEY --silent
 kc delete OPENAI_API_KEY
 ```
 
+### List key names
+```bash
+kc list
+kc list --status
+```
+
 ### Migrate one existing local-only key to iCloud sync
 ```bash
 kc migrate-to-sync OPENAI_API_KEY
@@ -70,6 +82,15 @@ kc migrate-to-sync --all
 ```bash
 kc help
 ```
+
+## Security note
+
+`kc set <KEY> <VALUE>` was removed intentionally. Passing secrets as command-line arguments leaks them into shell history, process lists, and terminal logs.
+
+Use one of these instead:
+
+- `--stdin` for scripts and pipes
+- `--prompt` for interactive entry
 
 ## Integration with `.zshrc` / `.zshenv`
 
@@ -118,8 +139,9 @@ Keys are stored in the macOS Keychain as generic passwords with:
 
 Default `kc set` behavior:
 
-1. tries to write a synchronizable item
-2. falls back to local-only storage if synchronizable writes are unavailable
-3. prints a warning when fallback happens
+1. reads the secret from stdin or a secure prompt
+2. tries to write a synchronizable item
+3. falls back to local-only storage if synchronizable writes are unavailable
+4. prints a warning when fallback happens
 
 `kc migrate-to-sync --all` scans existing local-only items for service `kc-cli`, rewrites them as synchronizable items, and removes the local-only copies after a successful sync-capable write.

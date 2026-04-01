@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 
 enum ExitCode: Int32 {
@@ -13,7 +14,7 @@ func printVersion() {
 func printUsage() {
     print("""
     Usage:
-      kc set <KEY> <VALUE> [--sync-only|--local-only]
+      kc set <KEY> (--stdin|--prompt) [--sync-only|--local-only]
                                    Set a key in the keychain (creates or updates)
       kc get <KEY> [--silent]       Get a key from the keychain
       kc delete <KEY>               Delete a key from the keychain
@@ -22,14 +23,16 @@ func printUsage() {
       kc migrate-to-sync --all      Rewrite all local-only keys as synchronizable
 
     Options:
+      --stdin                       Read the secret value from stdin
+      --prompt                      Prompt securely for the secret value
       --silent                      Suppress error messages (use with get command)
       --sync-only                   Fail if synchronizable write is unavailable
       --local-only                  Store only in the local login keychain
       -v, --version                 Show version information
 
     Examples:
-      kc set OPENAI_API_KEY sk-1234567890
-      kc set OPENAI_API_KEY sk-1234567890 --sync-only
+      printf '%s' "$OPENAI_API_KEY" | kc set OPENAI_API_KEY --stdin
+      kc set OPENAI_API_KEY --prompt --sync-only
       kc get OPENAI_API_KEY
       kc get OPENAI_API_KEY --silent
       kc delete OPENAI_API_KEY
@@ -41,6 +44,28 @@ func printUsage() {
     Note: In the signed install, keys are stored as synchronizable keychain items
           and sync through iCloud Keychain when available.
     """)
+}
+
+func readSecretFromStdin() throws -> String {
+    let data = FileHandle.standardInput.readDataToEndOfFile()
+
+    guard var value = String(data: data, encoding: .utf8) else {
+        throw KeychainError.invalidData
+    }
+
+    while value.last == "\n" || value.last == "\r" {
+        value.removeLast()
+    }
+
+    return value
+}
+
+func promptSecret() throws -> String {
+    guard let buffer = getpass("Value: ") else {
+        throw KeychainError.invalidData
+    }
+
+    return String(cString: buffer)
 }
 
 func main() {
@@ -57,15 +82,21 @@ func main() {
     switch command {
     case "set":
         guard arguments.count >= 3 else {
-            fputs("Error: 'set' command requires KEY and VALUE arguments\n", stderr)
+            fputs("Error: 'set' command requires KEY and one of --stdin or --prompt\n", stderr)
             printUsage()
             exit(ExitCode.invalidArguments.rawValue)
         }
 
         let key = arguments[1]
-        let value = arguments[2]
+        let useStdin = arguments.contains("--stdin")
+        let usePrompt = arguments.contains("--prompt")
         let syncOnly = arguments.contains("--sync-only")
         let localOnly = arguments.contains("--local-only")
+
+        guard useStdin != usePrompt else {
+            fputs("Error: use exactly one of --stdin or --prompt\n", stderr)
+            exit(ExitCode.invalidArguments.rawValue)
+        }
 
         guard !(syncOnly && localOnly) else {
             fputs("Error: use only one of --sync-only or --local-only\n", stderr)
@@ -81,6 +112,7 @@ func main() {
         }
 
         do {
+            let value = try useStdin ? readSecretFromStdin() : promptSecret()
             let result = try keychain.set(key: key, value: value, mode: mode)
             switch result {
             case .synchronizable:
