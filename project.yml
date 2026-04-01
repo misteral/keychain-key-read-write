@@ -1,0 +1,22 @@
+name: kc
+settings:
+  base:
+    DEVELOPMENT_TEAM: 8HR3ZJZ5MZ
+    CODE_SIGN_STYLE: Automatic
+    PRODUCT_BUNDLE_IDENTIFIER: co.itbeaver.LEIRadio
+    CODE_SIGN_ENTITLEMENTS: kc.entitlements
+    CURRENT_PROJECT_VERSION: 1
+    MARKETING_VERSION: 1.1.0
+    GENERATE_INFOPLIST_FILE: YES
+    INFOPLIST_KEY_LSBackgroundOnly: YES
+targets:
+  kc:
+    type: application
+    platform: macOS
+    deploymentTarget: "13.0"
+    sources:
+      - Sources
+    settings:
+      base:
+        PRODUCT_NAME: kc
+        EXECUTABLE_NAME: kc
